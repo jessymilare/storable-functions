@@ -1,0 +1,90 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+	<title>gugamilare/storable-functions @ GitHub</title>
+	
+	<style type="text/css">
+		body {
+  		margin-top: 1.0em;
+  		background-color: #75dede;
+		  font-family: "helvetica"; 
+  		color: #000000;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+		h1 { font-size: 3.8em; color: #8a2121; margin-bottom: 3px; }
+		h1 .small { font-size: 0.4em; }
+		h1 a { text-decoration: none }
+		h2 { font-size: 1.5em; color: #8a2121; }
+    h3 { text-align: center; color: #8a2121; }
+    a { color: #8a2121; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+		pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+	</style>
+	
+</head>
+
+<body>
+  <a href="http://github.com/gugamilare/storable-functions"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+  
+  <div id="container">
+
+    <div class="download">
+      <a href="http://github.com/gugamilare/storable-functions/zipball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+      <a href="http://github.com/gugamilare/storable-functions/tarball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
+    </div>
+      
+    <h1><a href="http://github.com/gugamilare/storable-functions">storable-functions</a> 
+      <span class="small">by <a href="http://github.com/gugamilare">gugamilare</a></small></h1>
+
+    <div class="description">
+      Provides a simple, portable way to serialize functions to Common Lisp.
+    </div>
+
+    <p>Storable Functions implements transformations of functions (including closures) from and to CLOS instances of some specific classes. It contains a set of macros for making this transformation possible, and tools for actually doing the transformation. The goal is to provide a simple, portable way to serialize functions.
+Portable in the sense that it should work across multiple Common Lisp implementations.
+Simple in the sense that supporting the serialization of all functions defined using this library should be just a matter of defining / redefining one or two methods of the serialization protocol.
+The only restriction to make functions serializable is to use a set of macros to create closure and function information.
+It includes cl-store+functions, which implements the serialization for cl-store.
+Code to support serializing functions in other serialization libraries should not be hard to do, but general knowledge about the internals of the serialization library is required. If you want to add support to a specific serialization library and you have this knowledge, contact me and I probably can help you with the coding.</p><h2>Dependencies</h2>
+<p>Metatilities, Trivial-garbage.
+For cl-store+functions, it needs cl-store.</p>
+<h2>License</h2>
+<p>MIT style.</p>
+<h2>Authors</h2>
+<p>Gustavo Henrique Milaré (gugamilare@gmail.com)<br/><br/>      </p>
+<h2>Contact</h2>
+<p>(gugamilare@gmail.com)</p>
+
+
+    <h2>Download</h2>
+    <p>
+      You can download this project in either
+      <a href="http://github.com/gugamilare/storable-functions/zipball/master">zip</a> or
+      <a href="http://github.com/gugamilare/storable-functions/tarball/master">tar</a> formats.
+    </p>
+    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
+      by running:
+      <pre>$ git clone git://github.com/gugamilare/storable-functions</pre>
+    </p>
+      
+    <div class="footer">
+      get the source code on GitHub : <a href="http://github.com/gugamilare/storable-functions">gugamilare/storable-functions</a>
+    </div>
+    
+  </div>
+
+  
+</body>
+</html>
