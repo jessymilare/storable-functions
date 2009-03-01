@@ -1,7 +1,7 @@
 ;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 
 ;;; Copyright (c) 2009 Gustavo Henrique Milaré
-;;; See the file licence for licence information.
+;;; See the file license for license information.
 
 (defpackage :storable-functions-system
   (:use :cl :asdf))
@@ -17,5 +17,8 @@
   :description "Includes the ability to store function objects to cl-store."
   :depends-on (storable-functions cl-store)
   :components ((:module "cl-store+functions"
-		:serial t
 		:components ((:file "cl-store+functions")))))
+
+(defmethod perform ((op test-op) (system (eql (find-system :cl-store+functions))))
+  (oos 'load-op :cl-store+functions-tests)
+  (oos 'test-op :cl-store+functions-tests))

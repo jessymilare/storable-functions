@@ -1,5 +1,5 @@
 ;;; Copyright (c) 2009 Gustavo Henrique Milaré
-;;; See the file licence for licence information.
+;;; See the file license for license information.
 
 (defpackage :cl-store+functions
   (:use :cl :cl-store :storable-functions :metatilities)
@@ -7,12 +7,15 @@
 
 (in-package :cl-store+functions)
 
-(defconstant +code-information-code+ 36)
+(defconstant +code-information-code+ 250)
 
 (defbackend cl-store+functions
     :magic-number 1025429561
     ;; cl-store+functions is meant to be compatible with cl-store
-    :compatible-magic-numbers 1395477571
+    :compatible-magic-numbers (1279478851 1395477571)
+    :old-magic-numbers (1912923 1886611788 1347635532 1886611820 1414745155
+				1349740876 1884506444 1347643724 1349732684 1953713219
+				1416850499 1395477571)
     :extends (cl-store)
     :fields ((restorers :accessor restorers
 			:initform (let ((cl-store-backend (find-backend 'cl-store))

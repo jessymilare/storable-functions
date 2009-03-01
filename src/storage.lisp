@@ -1,5 +1,5 @@
 ;;; Copyright (c) 2009 Gustavo Henrique Milaré
-;;; See the file licence for licence information.
+;;; See the file license for license information.
 
 ;;; About the approach here:
 ;;; It is needed to avoid circularity on closures because the code needs to be generated
@@ -21,13 +21,19 @@
   ((function-info :accessor info-function-info :initarg :function-info :type function-info)
    (root :accessor info-root :initarg :root :type code-information)))
 
+;;; During restorage, it is not good to keep weak pointers to the children of closures.
+;;; So we keep a list of weaklists that need to be set at the end (see utils.lisp).
+(defvar *weak-lists-to-set* nil)
+
 (defmacro with-storable-functions-restorage ((&key (restorage-table :create) &allow-other-keys)
 					     &body body)
   `(let ((*restored-functions* ,(ecase restorage-table
 				       (:create '(make-hash-table))
 				       (:clear '(clrhash *restored-functions*))
-				       (:reuse '*restored-functions*))))
-     ,@body))
+				       (:reuse '*restored-functions*)))
+	 (*weak-lists-to-set* nil))
+     (prog1 (progn ,@body)
+       (mapcar #'set-weak-list *weak-lists-to-set*))))
 
 (defmacro with-storable-functions-storage ((&key (execute-gc t) &allow-other-keys)
 					   &body body)
@@ -50,12 +56,18 @@
       (bt:with-recursive-lock-held (*storage-lock*)
 	(slot-makunbound info 'environment) ; avoids circularity - the circularity is well known,
 					; it is restored in call to restore-code-info
-	(funcall callback)
-	(setf (info-environment info) env)))))
+	(unwind-protect
+	     (funcall callback)
+	  (setf (info-environment info) env))))))
 
 (defmethod store-code-info ((info function-referrer) callback)
-  ;; Avoids the standard method to unbound the environment slot
   (funcall callback))
+
+(defmethod store-code-info ((info closure-info) callback)
+  (bt:with-recursive-lock-held (*storage-lock*)
+    (unset-weak-list (info-children-weak-list info)) ; (avoid implementation-dependent details in the storage)
+    (unwind-protect (call-next-method)
+      (set-weak-list (info-children-weak-list info))))) ; now restores the list of weak-pointers
 
 (defmethod store-code-info ((info let-closure-info) callback)
   (let ((func (info-values-generator info)))
@@ -66,13 +78,6 @@
 	(slot-makunbound info 'values) ; removes unnecessary information
 	(setf (info-values-generator info) func))))) ; and rebinds the function slot
 
-(defmethod store-code-info ((info closure-info) callback)
-  (let ((children (info-children info)))
-    (bt:with-recursive-lock-held (*storage-lock*)
-      (setf (info-children-weak-list info) children) ; (avoid implementation-dependent details in the storage)
-      (unwind-protect (call-next-method)
-	(setf (info-children info) children))))) ; now restores the list of weak-pointers
-
 (defgeneric restore-code-info (info)
   (:method ((info code-information))
     (unless (slot-boundp info 'environment)
@@ -80,25 +85,28 @@
     info))
 
 (defmethod restore-code-info ((info function-referrer))
-  (setf (info-environment info) nil)
+  (setf (info-environment info) nil
+	(info-environment (info-root info)) nil)
   (let* ((function-info (info-function-info info))
-	 (func (get-remove-info-value function-info)))
+	 (func (get-info-value function-info)))
     (setf (get-function-info func) function-info)
     func))
 
 (defmethod restore-code-info ((info closure-info))
-  (let ((children (info-children-weak-list info)))
-    (dolist (child children)
-      (setf (info-environment child) info)
-      (restore-code-info child))
-    ;; Rebuilds the list of weak pointers
-    (setf (info-children info) children))
-  (call-next-method))
+  (prog1 (call-next-method)
+    (let ((children (get-list-from-weak-list (info-children-weak-list info))))
+      (push (info-children-weak-list info) *weak-lists-to-set*)
+      (dolist (child children)
+	(setf (info-environment child) info)
+	#+ignore
+	(restore-code-info child))
+      ;; Rebuilds the list of weak pointers
+      (setf (info-children info) children))))
 
 (defmethod restore-code-info ((info let-closure-info))
-  (setf (info-values-generator info) (get-remove-info-value info))
-  (slot-makunbound info 'values)
-  (call-next-method))
+  (prog1 (call-next-method)
+    (setf (info-values-generator info) (get-info-value info))
+    (slot-makunbound info 'values)))
 
 (defmethod restore-code-info ((info flet-closure-info))
   (prog1 (call-next-method) ; calls standard method which will set info-environment to nil if
@@ -109,4 +117,5 @@
 	     (flet (info-environment info)))))
       (dolist (function (info-functions info))
 	(setf (info-environment function) environment)
+	#+ignore
 	(restore-code-info function)))))

@@ -1,5 +1,5 @@
 ;;; Copyright (c) 2009 Gustavo Henrique Milaré
-;;; See the file licence for licence information.
+;;; See the file license for license information.
 
 (in-package :storable-functions)
 
@@ -12,10 +12,11 @@
 		    `(,',type ,,'vars
 			      (let ((lexical-environment
 				     (make-instance
-				      'let-closure-info :type ',',type
+				      'let-closure-info :type 'let* ; no need for let since values will
+					; already be known by restorage time
 				      :environment lexical-environment :variables ',,'variables
 				      :values-generator ,(generate-closure-values-generator variables)
-				      :declarations ,,'(mapappend #'cdr declarations))))
+				      :declarations ',,'(mapappend #'cdr declarations))))
 				,@,'declarations
 				,@,'body)))))))
   (def st-let let)
@@ -29,18 +30,18 @@
 		  ,@(if name `(:name ',name))))
 
 (defmacro st-lambda (lambda-list &body body)
-  (with-unique-names (func)
-    `(let ((,func (lambda ,lambda-list ,@body)))
-       (setf (get-function-info ,func)
+  (with-unique-names (function)
+    `(let ((,function (lambda ,lambda-list ,@body)))
+       (setf (get-function-info ,function)
 	     ,(parse-function 'lambda-info lambda-list body))
-       ,func)))
+       ,function)))
 
 (defmacro st-named-lambda (name lambda-list &body body)
-  (with-unique-names (func)
-    `(let ((,func (lambda ,lambda-list ,@body)))
-       (setf (get-function-info ,func)
+  (with-unique-names (function)
+    `(let ((,function (named-lambda ,lambda-list ,@body)))
+       (setf (get-function-info ,function)
 	     ,(parse-function 'named-lambda-info lambda-list body name))
-       ,func)))
+       ,function)))
 
 (macrolet ((def (name type)
 	     `(defmacro ,name ( fspecs &body body)
@@ -61,13 +62,13 @@
 					:environment lexical-environment
 					:functions (list ,@info-names)
 					:declarations ',,'(mapappend #'cdr declarations))))
-				  ,,(when (eq type 'labels)
-					  ;; Label functions may depend on the entire labels form.
-					  ;; Flet functions, on the other hand, don't.
-					  `(mapcar #'(lambda (info)
-						       `(setf (info-environment ,info)
-							      lexical-environment))
-						   info-names))
+				  ,@,(when (eq type 'labels)
+					   ;; Label functions may depend on the entire labels form.
+					   ;; Flet functions, on the other hand, don't.
+					   `(mapcar #'(lambda (info)
+							`(setf (info-environment ,info)
+							       lexical-environment))
+						    info-names))
 				  ,@(mapcar #'(lambda (func-name info-name)
 						`(setf (get-function-info (function ,func-name)) ,info-name))
 					    func-names info-names)
@@ -107,11 +108,22 @@
     ((lambda named-lambda let let* flet labels macrolet symbol-macrolet)
      `(,(find-symbol (concatenate 'string "ST-" (symbol-name function-name)))
 	,@arguments))
-    (t (let ((new-args (mapcar #'(lambda (arg)
-				   (declare (ignore arg))
-				   (gensym))
-			       arguments)))
-	 `(let ,(mapcar #'list new-args arguments)
-	    (make-instance 'function-call-info
-			   :function-name ',function-name :values (list . ,new-args))
-	    (the function (,function-name . ,new-args)))))))
+    (t (let ((new-args (loop repeat (length arguments)
+			    collect (gensym))))
+	 (with-unique-names (function)
+	   `(let* (,@(mapcar #'list new-args arguments)
+		   (,function (,function-name . ,new-args)))
+	      (when (functionp ,function)
+		(setf (get-function-info ,function)
+		      (make-instance 'function-call-info
+				     :function-name ',function-name :values (list . ,new-args))))
+	      ,function))))))
+
+(defmacro stq (form)
+  (with-unique-names (function)
+    `(let ((,function ,form))
+       (when (functionp ,function)
+	 (setf (get-function-info ,function)
+	       (make-instance 'quoted-function-info
+			      :body ',form)))
+       ,function)))

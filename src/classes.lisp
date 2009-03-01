@@ -1,5 +1,5 @@
 ;;; Copyright (c) 2009 Gustavo Henrique Milaré
-;;; See the file licence for licence information.
+;;; See the file license for license information.
 
 (in-package :storable-functions)
 
@@ -33,16 +33,12 @@
 (defun setting-info-value (info value)
   `(setf (gethash ',info *restored-functions*) ,value))
 
-(defun get-remove-info-value (info)
-  (prog1 (or (gethash info *restored-functions*)
-	     (progn
-	       (eval (generate-code info))
-	       ;; If everything went ok, this should return a value
-	       (gethash info *restored-functions*)))
-    (remhash info *restored-functions*)))
-
-(defun peek-info-value (info)
-  (gethash info *restored-functions*))
+(defun get-info-value (info)
+  (or (gethash info *restored-functions*)
+      (progn
+	(eval (generate-code info))
+	;; If everything went ok, this should return a value
+	(gethash info *restored-functions*))))
 
 ;;; Functions
 
@@ -60,11 +56,14 @@
   ((function-name :initarg :function-name :accessor info-function-name :type symbol)
    (values :initarg :values :accessor info-values :type list)))
 
+(defclass quoted-function-info (function-info)
+  ((body :initarg :body :accessor info-body :type list)))
+
 ;;; Closures
 
 (defclass closure-info (code-information)
   ((type :initarg :type :accessor info-type :type symbol)
-   (children :accessor info-children-weak-list :type list :initform nil)
+   (children :accessor info-children-weak-list :type list :initform (new-weak-list))
    (declarations :initarg :declarations :accessor info-declarations :type list)))
 
 (defclass let-closure-info (closure-info)
@@ -81,40 +80,37 @@
 (defmethod initialize-instance :after ((info code-information) &key)
   (let ((env (info-environment info)))
     (when (typep env 'closure-info)
-      (pushnew (tg:make-weak-pointer info)
-	       (info-children-weak-list env)
-	       :key #'weak-pointer-value))))
+      (setf (info-children-weak-list env)
+	    (pushnew-weak-list info (info-children-weak-list env))))))
 
 (defmethod (setf info-environment) :before (environment (info code-information))
   (when (slot-boundp info 'environment)
     (let ((env (info-environment info)))
       (when (typep env 'closure-info)
 	(setf (info-children-weak-list env)
-	      (delete info (info-children-weak-list env)
-		      :key #'tg:weak-pointer-value))))))
+	      (delete-weak-list info (info-children-weak-list env)))))))
 
-(defmethod (setf info-environment) :after ((environment closure-info) (info code-information))
-  (pushnew (tg:make-weak-pointer info)
-	   (info-children-weak-list environment)
-	   :key #'weak-pointer-value))
+(defmethod (setf info-environment) :after (environment (info code-information))
+  (let ((env (info-environment info)))
+    (when (typep env 'closure-info)
+      (setf (info-children-weak-list env)
+	    (pushnew-weak-list info (info-children-weak-list env))))))
+
+(defgeneric info-children (info))
 
 (defmethod info-children ((info closure-info))
   ;; We put weak pointers here because the children of a closure
   ;; are only kept for generating the child code.
   ;; If some child can be garbage-collected, it means it's function(s) is(are) not around anymore,
   ;; therefore the child don't need to be stored.
-  (with-collector (collect)
-    (setf (info-children-weak-list info)
-	  (delete-if #'(lambda (child)
-			 (not (if child (collect child))))
-		     (info-children-weak-list info)
-		     :key #'tg:weak-pointer-value))))
+  (get-list-from-weak-list (info-children-weak-list info)))
+
+(defgeneric (setf info-children) (children info))
 
 (defmethod (setf info-children) (children (info closure-info))
-  (setf (info-children-weak-list info)
-	(mapcar #'make-weak-pointer children))
-  children)
+  (set-weak-list (info-children-weak-list info) children))
 
+;;; Define locking methods for accessors.
 (macrolet ((def (method class)
 	     `(progn
 		(defmethod ,method :around ((info ,class))
@@ -123,13 +119,13 @@
 		(defmethod (setf ,method) :around (value (info ,class))
 		  (bt:with-recursive-lock-held (*storage-lock*)
 		    (call-next-method))))))
-
   (def info-values-generator let-closure-info)
   (def info-values let-closure-info))
 
 (defun find-root-info (info)
-  (let ((par (info-environment info)))
-    (if (not par)
+  (let ((par (and (slot-boundp info 'environment)
+		  (info-environment info))))
+    (if (null par)
 	info
 	(find-root-info par))))
 
@@ -140,7 +136,7 @@
 (defun generate-closure-values-generator (variables)
   `(compile nil (lambda (internal-info) ; internal-info is the same as info, but for run-time access
 					; this is to make future expansions (e.g. run time checking
-					; which variables can be stored)
+					; which variables need to be stored)
 		  (declare (ignore internal-info))
 		  (list . ,variables))))
 
@@ -195,4 +191,17 @@
      (info-macros info))))
 
 (defmethod generate-code-from-info ((info function-call-info))
-  (setting-info-value info `(,(car (info-function-name info)) . ,(info-values info))))
+  (setting-info-value
+   info
+   (let* ((values (info-values info))
+	  (vars (loop repeat (length values)
+		     collect (gensym))))
+     (declare (type list vars)
+	      (dynamic-extent vars))
+     `(let* ,(mapcar #'list vars
+		     ;; quoted values - some value can be a list
+		     (mapcar (curry #'list 'quote) values))
+	(,(info-function-name info) ,@vars)))))
+
+(defmethod generate-code-from-info ((info quoted-function-info))
+  (setting-info-value info (info-body info)))

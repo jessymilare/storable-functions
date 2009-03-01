@@ -1,7 +1,7 @@
 ;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 
 ;;; Copyright (c) 2009 Gustavo Henrique Milaré
-;;; See the file licence for licence information.
+;;; See the file license for license information.
 
 (defpackage :storable-functions-system
   (:use :cl :asdf))
@@ -30,3 +30,7 @@ function information."
 			     (:file "storage" :depends-on ("classes"))
 			     (:file "deflex" :depends-on ("package"))
 			     (:file "macros" :depends-on ("deflex" "classes"))))))
+
+(defmethod perform ((op test-op) (system (eql (find-system :storable-functions))))
+  (oos 'load-op :storable-functions-tests)
+  (oos 'test-op :storable-functions-tests))
