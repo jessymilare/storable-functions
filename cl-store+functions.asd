@@ -10,7 +10,7 @@
 
 (defsystem cl-store+functions
   :name "cl-store+functions"
-  :version "0.0.1"
+  :version "0.0.2"
   :maintainer "Gustavo Henrique Milaré"
   :author "Gustavo Henrique Milaré"
   :licence "MIT style"
