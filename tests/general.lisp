@@ -84,7 +84,7 @@
   ;; n-func is bound to the restored "copy" of the function
   (dotimes (i 3)
     (ensure=-funcall func n-func))
-  (ensure-cases (x) '((16) (-4) (-18) (5))
+  (ensure-cases (x) '(16 -4 -18 5)
     (ensure=-funcall func n-func x)))
 
 ;;; Multiple closures work just fine as well
@@ -106,7 +106,7 @@
   (dotimes (i 3)
     (ensure=-funcall inc-func n-inc-func))
   (ensure=-funcall set-func n-set-func 10)
-  (ensure-cases (x) '((19) (-6) (-2) (3))
+  (ensure-cases (x) '(19 -6 -2 3)
     (ensure=-funcall inc-func n-inc-func x))
   (ensure=-funcall set-func n-set-func 12))
 
@@ -178,7 +178,7 @@
 			      (shiftf a b c (the fixnum value))))))))
     (dolist (x '(3 11 10 8 16))
       (funcall func x))
-  (ensure-cases (x) '((10) (6) (-13) (-7) (10) (13) (-15) (-18) (0) (0) (0))
+  (ensure-cases (x) '(10 6 -13 -7 10 13 -15 -18 0 0 0)
     (ensure=-funcall func n-func x)))
 
 (def-std-test recursive-shifting-closure-test
@@ -199,19 +199,19 @@
 	(funcall func1 x))
       (dolist (x '(8 14 0))
 	(funcall func2 x)))
-  (ensure-cases (x) '((2) (0) (-13))
+  (ensure-cases (x) '(2 0 -13)
     (ensure=-funcall func1 n-func1 x))
-  (ensure-cases (x) '((2) (0) (-13))
+  (ensure-cases (x) '(2 0 -13)
     (ensure=-funcall func1 n-func1 x))
-  (ensure-cases (x) '((-8) (8))
+  (ensure-cases (x) '(-8 8)
     (ensure=-funcall func2 n-func2 x))
-  (ensure-cases (x) '((15) (-3))
+  (ensure-cases (x) '(15 -3)
     (ensure=-funcall func1 n-func1 x))
-  (ensure-cases (x) '((4) (-1) (18))
+  (ensure-cases (x) '(4 -1 18)
     (ensure=-funcall func2 n-func2 x))
-  (ensure-cases (x) '((0) (0))
+  (ensure-cases (x) '(0 0)
     (ensure=-funcall func1 n-func1 x))
-  (ensure-cases (x) '((0) (0) (0))
+  (ensure-cases (x) '(0 0 0)
     (ensure=-funcall func2 n-func2 x)))
 
 (def-std-test labels-add-sub-test

@@ -133,17 +133,22 @@
   (bt:with-recursive-lock-held (*storage-lock*)
     (generate-code-from-info (find-root-info info))))
 
+(defun maybe-compile (function)
+  ;; compiles function if possible.
+  (or (ignore-errors (compile nil function))
+      function))
+
 (defun generate-closure-values-generator (variables)
-  `(compile nil (lambda (internal-info) ; internal-info is the same as info, but for run-time access
+  `(maybe-compile (lambda (internal-info) ; internal-info is the same as info, but for run-time access
 					; this is to make future expansions (e.g. run time checking
 					; which variables need to be stored)
-		  (declare (ignore internal-info))
-		  (list . ,variables))))
+		    (declare (ignore internal-info))
+		    (list . ,variables))))
 
 (defgeneric generate-code-from-info (info))
 
 (defmethod generate-code-from-info ((info lambda-info))
-  (setting-info-value info `(compile nil ,(generate-function-lambda info))))
+  (setting-info-value info `(maybe-compile ,(generate-function-lambda info))))
 
 (defgeneric generate-function-lambda (info))
 
