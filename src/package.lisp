@@ -2,7 +2,7 @@
 ;;; See the file license for license information.
 
 (defpackage :storable-functions
-  (:use :trivial-garbage :cl :metatilities)
+  (:use :trivial-garbage :cl :alexandria)
   (:nicknames :st-fun)
   (:export #:code-information
 

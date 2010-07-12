@@ -10,7 +10,7 @@
 
 (defsystem storable-functions
   :name "Storable Functions"
-  :version "0.0.2"
+  :version "0.0.3"
   :maintainer "Gustavo Henrique Milaré"
   :author "Gustavo Henrique Milaré"
   :licence "MIT style"
@@ -22,7 +22,7 @@ Simple in the sense that supporting the serialization of all functions defined u
 should be just a matter of defining / redefining one or two methods of the serialization protocol.
 The only restriction to make functions serializable is to use a set of macros to create closure and
 function information."
-  :depends-on (trivial-garbage metatilities)
+  :depends-on (trivial-garbage alexandria)
   :components ((:module "src"
 		:components ((:file "package")
 			     (:file "utils" :depends-on ("package"))

@@ -3,7 +3,7 @@
 
 (in-package :storable-functions-tests)
 
-(eval-always
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (use-package '(:cl-store+functions :cl-store)))
 
 (defun run-cl-store+functions-tests (&rest args)

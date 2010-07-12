@@ -7,7 +7,7 @@
 
 (macrolet ((def (name type)
 	     `(defmacro ,name (vars &body body)
-		(let ((variables (mapcar #'car-safe vars)))
+		(let ((variables (mapcar #'ensure-car vars)))
 		  (multiple-value-bind (body declarations) (parse-body body)
 		    `(,',type ,,'vars
 			      (let ((lexical-environment
@@ -16,7 +16,7 @@
 					; already be known by restorage time
 				      :environment lexical-environment :variables ',,'variables
 				      :values-generator ,(generate-closure-values-generator variables)
-				      :declarations ',,'(mapappend #'cdr declarations))))
+				      :declarations ',,'(mappend #'cdr declarations))))
 				,@,'declarations
 				,@,'body)))))))
   (def st-let let)
@@ -61,7 +61,7 @@
 					'flet-closure-info :type ',',type
 					:environment lexical-environment
 					:functions (list ,@info-names)
-					:declarations ',,'(mapappend #'cdr declarations))))
+					:declarations ',,'(mappend #'cdr declarations))))
 				  ,@,(when (eq type 'labels)
 					   ;; Label functions may depend on the entire labels form.
 					   ;; Flet functions, on the other hand, don't.
@@ -86,7 +86,7 @@
 				    'macro-closure-info :type ',',type
 				    :environment lexical-environment
 				    :macros ',macros
-				    :declarations ',,'(mapappend #'cdr declarations))))
+				    :declarations ',,'(mappend #'cdr declarations))))
 			      ,@,'declarations
 			      ,@,'body))))))
   (def st-macrolet macrolet)

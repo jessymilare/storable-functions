@@ -2,7 +2,7 @@
 ;;; See the file license for license information.
 
 (defpackage :storable-functions-tests
-  (:use :cl :metatilities :storable-functions :lift))
+  (:use :cl :alexandria :storable-functions :lift))
 
 (in-package :storable-functions-tests)
 
@@ -23,7 +23,7 @@
   `(ensure-same (funcall ,func1 ,@args) (funcall ,func2 ,@args)
 		:test #'equal :ignore-multiple-values? t))
 
-(eval-always
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *all-standard-tests* nil))
 
 (defmacro def-tester-for-standard-tests (testsuite-name options &body body)
@@ -57,7 +57,7 @@
 		 ,@body))))))
 
 (defmacro def-std-test (testname (function-vars function-set) prologue-code &body body)
-  `(eval-always
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
      (pushnew '(,testname ,function-vars ,function-set ,prologue-code ,body) *all-standard-tests*
 	      :key #'car)
      ',testname))

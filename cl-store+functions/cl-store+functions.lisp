@@ -2,7 +2,7 @@
 ;;; See the file license for license information.
 
 (defpackage :cl-store+functions
-  (:use :cl :cl-store :storable-functions :metatilities)
+  (:use :cl :cl-store :storable-functions :alexandria)
   (:export #:cl-store+functions))
 
 (in-package :cl-store+functions)
