@@ -11,7 +11,7 @@
      finally (return (values rest declarations))))
 
 (defmacro with-collector ((collector) &body body)
-  (with-unique-names (list last)
+  (with-gensyms (list last)
     `(let ((,list nil) (,last nil))
        (flet ((,collector (elt)
 		(if ,list
@@ -20,6 +20,25 @@
 		,list))
 	 ,@body)
        ,list)))
+
+(defmacro dlambda (preargs &body ds)
+  (with-gensyms (args)
+    `(lambda (,@preargs &rest ,args)
+       ,@(loop while (or (stringp (car ds))
+                         (and (listp (car ds))
+                              (eq 'declare (caar ds))))
+              collect (pop ds))
+       (case (car ,args)
+         ,@(mapcar
+            (lambda (d)
+              `(,(if (eq t (car d))
+                     t
+                     (ensure-list (car d)))
+                 (apply (lambda ,@(cdr d))
+                        ,(if (eq t (car d))
+                             args
+                             `(cdr ,args)))))
+            ds)))))
 
 (declaim (inline #+ignore safe-weak-pointer-value pushnew-weak-list))
 

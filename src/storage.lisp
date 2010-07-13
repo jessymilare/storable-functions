@@ -70,13 +70,13 @@
       (set-weak-list (info-children-weak-list info))))) ; now restores the list of weak-pointers
 
 (defmethod store-code-info ((info let-closure-info) callback)
-  (let ((func (info-values-generator info)))
+  (let ((func (info-values-accessor info)))
     (bt:with-recursive-lock-held (*storage-lock*)
-      (slot-makunbound info 'values-generator) ; unbounds the unstorable function slot
+      (slot-makunbound info 'values-accessor) ; unbounds the unstorable function slot
       (setf (info-values info) (funcall func info)) ; takes a "snapshot" of the current closure status
       (unwind-protect (call-next-method)
 	(slot-makunbound info 'values) ; removes unnecessary information
-	(setf (info-values-generator info) func))))) ; and rebinds the function slot
+	(setf (info-values-accessor info) func))))) ; and rebinds the function slot
 
 (defgeneric restore-code-info (info)
   (:method ((info code-information))
@@ -105,7 +105,7 @@
 
 (defmethod restore-code-info ((info let-closure-info))
   (prog1 (call-next-method)
-    (setf (info-values-generator info) (get-info-value info))
+    (setf (info-values-accessor info) (get-info-value info))
     (slot-makunbound info 'values)))
 
 (defmethod restore-code-info ((info flet-closure-info))

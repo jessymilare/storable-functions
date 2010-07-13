@@ -15,7 +15,7 @@
 				      'let-closure-info :type 'let* ; no need for let since values will
 					; already be known by restorage time
 				      :environment lexical-environment :variables ',,'variables
-				      :values-generator ,(generate-closure-values-generator variables)
+				      :values-accessor ,(generate-closure-values-accessor variables)
 				      :declarations ',,'(mappend #'cdr declarations))))
 				,@,'declarations
 				,@,'body)))))))

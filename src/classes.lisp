@@ -3,10 +3,12 @@
 
 (in-package :storable-functions)
 
-(defvar *storable-function-table* (tg:make-weak-hash-table :weakness :key :test #'eq))
+(defvar *storable-function-table* (tg:make-weak-hash-table :weakness :key :test #'eq
+                                                           :weakness-matters nil))
 
 (defvar *id* 0)
-(defvar *restored-functions* (tg:make-weak-hash-table :weakness :value))
+(defvar *restored-functions* (tg:make-weak-hash-table :weakness :key :test #'eq
+                                                      :weakness-matters nil))
 
 ;;; We need to lock because we change the field values in storage / restorage.
 ;;; This is just for safety, because (I believe) there probably won't be
@@ -34,11 +36,13 @@
   `(setf (gethash ',info *restored-functions*) ,value))
 
 (defun get-info-value (info)
-  (or (gethash info *restored-functions*)
-      (progn
-	(eval (generate-code info))
-	;; If everything went ok, this should return a value
-	(gethash info *restored-functions*))))
+  (prog1
+      (or (gethash info *restored-functions*)
+          (progn
+            (eval (generate-code info))
+            ;; If everything went ok, this should return a value now
+            (gethash info *restored-functions*)))
+    (remhash info *restored-functions*)))
 
 ;;; Functions
 
@@ -67,7 +71,7 @@
    (declarations :initarg :declarations :accessor info-declarations :type list)))
 
 (defclass let-closure-info (closure-info)
-  ((values-generator :initarg :values-generator :accessor info-values-generator :type function)
+  ((values-accessor :initarg :values-accessor :accessor info-values-accessor :type function)
    (variables :initarg :variables :accessor info-variables :type list)
    (values :initarg :values :accessor info-values :type list)))
 
@@ -119,7 +123,7 @@
 		(defmethod (setf ,method) :around (value (info ,class))
 		  (bt:with-recursive-lock-held (*storage-lock*)
 		    (call-next-method))))))
-  (def info-values-generator let-closure-info)
+  (def info-values-accessor let-closure-info)
   (def info-values let-closure-info))
 
 (defun find-root-info (info)
@@ -138,12 +142,30 @@
   (or (ignore-errors (compile nil function))
       function))
 
-(defun generate-closure-values-generator (variables)
-  `(maybe-compile (lambda (internal-info) ; internal-info is the same as info, but for run-time access
-					; this is to make future expansions (e.g. run time checking
-					; which variables need to be stored)
-		    (declare (ignore internal-info))
-		    (list . ,variables))))
+(defun generate-closure-values-accessor (variables)
+  (with-gensyms (sym info local-p value parent)
+    `(maybe-compile (dlambda (,info)
+                      (:get (,sym &optional ,local-p)
+                            (case ,sym
+                              ,@(mapcar (lambda (var)
+                                          `(,var (values ,var t)))
+                                        variables)
+                              (t (if-let ((,parent (and (not ,local-p)
+                                                        (info-environment ,info))))
+                                   (funcall (info-values-accessor ,parent)
+                                            ,parent :get ,sym)
+                                   (values nil nil)))))
+                      (:set (,sym ,value &optional ,local-p)
+                            (case ,sym
+                              ,@(mapcar (lambda (var)
+                                          `(,var (values (setf ,var ,value) t)))
+                                        variables)
+                              (t (if-let ((,parent (and (not ,local-p)
+                                                        (info-environment ,info))))
+                                   (funcall (info-values-accessor ,parent)
+                                            ,parent :set ,sym ,value)
+                                   (values nil nil)))))
+                      (t () (list . ,variables))))))
 
 (defgeneric generate-code-from-info (info))
 
@@ -171,7 +193,7 @@
 (defmethod generate-code-from-info ((info let-closure-info))
   `(progn
      ,(setting-info-value
-       info (generate-closure-values-generator (info-variables info)))
+       info (generate-closure-values-accessor (info-variables info)))
      ,(call-next-method)))
 
 (defmethod generate-code-from-info ((info flet-closure-info))
@@ -188,7 +210,7 @@
 		 `(,var ',value))
 	     (info-variables info) (if (slot-boundp info 'values)
 				       (info-values info)
-				       (funcall (info-values-generator info) info))))
+				       (funcall (info-values-accessor info) info))))
     ((flet labels)
      (mapcar (compose #'cdr #'generate-function-lambda)
 	     (info-functions info)))
