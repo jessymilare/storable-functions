@@ -26,12 +26,12 @@ The only restriction to make functions serializable is to use a set of macros
 to create closure and function information."
   :depends-on (trivial-garbage alexandria asdf-system-connections)
   :components ((:module "src"
-		:components ((:file "package")
-			     (:file "utils" :depends-on ("package"))
-			     (:file "classes" :depends-on ("utils"))
-			     (:file "storage" :depends-on ("classes"))
-			     (:file "deflex" :depends-on ("package"))
-			     (:file "macros" :depends-on ("deflex" "classes"))))))
+                :components ((:file "package")
+                             (:file "utils" :depends-on ("package"))
+                             (:file "classes" :depends-on ("utils"))
+                             (:file "storage" :depends-on ("classes"))
+                             (:file "deflex" :depends-on ("package"))
+                             (:file "macros" :depends-on ("deflex" "classes"))))))
 
 (defmethod perform ((op test-op) (system (eql (find-system :storable-functions))))
   (oos 'load-op :storable-functions-tests)

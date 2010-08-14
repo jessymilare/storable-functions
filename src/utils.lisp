@@ -14,11 +14,11 @@
   (with-gensyms (list last)
     `(let ((,list nil) (,last nil))
        (flet ((,collector (elt)
-		(if ,list
-		    (setf (cdr ,last) (cons elt nil))
-		    (setf ,last (setf ,list (cons elt nil))))
-		,list))
-	 ,@body)
+                (if ,list
+                    (setf (cdr ,last) (cons elt nil))
+                    (setf ,last (setf ,list (cons elt nil))))
+                ,list))
+         ,@body)
        ,list)))
 
 (defmacro dlambda (preargs &body ds)
@@ -57,21 +57,21 @@
 
 (defun delete-weak-list (elt list)
   (setf (cdr list)
-	(if (car list)
-	    (delete elt (cdr list) :key #'tg:weak-pointer-value)
-	    (delete elt (cdr list))))
+        (if (car list)
+            (delete elt (cdr list) :key #'tg:weak-pointer-value)
+            (delete elt (cdr list))))
   list)
 
 (defun get-list-from-weak-list (list)
   (if (car list)
       (with-collector (collect)    
-	(setf (cdr list)
-	      (delete-if #'(lambda (child)
-			     (not (when child
-				    (collect child)
-				    t)))
-			 (cdr list)
-			 :key #'tg:weak-pointer-value)))
+        (setf (cdr list)
+              (delete-if #'(lambda (child)
+                             (not (when child
+                                    (collect child)
+                                    t)))
+                         (cdr list)
+                         :key #'tg:weak-pointer-value)))
       (cdr list)))
 
 (declaim (inline set-weak-list unset-weak-list new-weak-list))
@@ -84,7 +84,7 @@
 
 (defun unset-weak-list (weak-list &optional (list (get-list-from-weak-list weak-list)))
   (setf (car weak-list) nil
-	(cdr weak-list) list))
+        (cdr weak-list) list))
 
 (defun new-weak-list ()
   (cons t nil))

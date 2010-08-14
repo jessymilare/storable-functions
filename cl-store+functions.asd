@@ -17,7 +17,7 @@
   :description "Includes the ability to store function objects to cl-store."
   :requires (storable-functions cl-store)
   :components ((:module "cl-store+functions"
-		:components ((:file "cl-store+functions")))))
+                        :components ((:file "cl-store+functions")))))
 
 (defmethod perform ((op test-op)
                     (system (eql (find-system :cl-store+functions))))

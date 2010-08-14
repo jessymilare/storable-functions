@@ -1,3 +1,4 @@
+
 ;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 
 ;;; Copyright (c) 2009 Gustavo Henrique Milaré
@@ -16,7 +17,7 @@
   :description "Test system for Storable Functions."
   :depends-on (storable-functions lift cl-store+functions cl-store-tests)
   :components ((:module "tests"
-		:components ((:file "general")))))
+                        :components ((:file "general")))))
 
 (defmethod perform ((op test-op)
                     (system (eql (find-system :storable-functions-tests))))

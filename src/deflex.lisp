@@ -49,19 +49,19 @@
   kind 'VARIABLE. The new VAR will have lexical scope and thus may be
   shadowed by LET bindings without affecting its dynamic (global) value."
   (let* ((s0 (symbol-name '#:*storage-for-deflex-var-))
-	 (s1 (symbol-name var))
-	 (s2 (symbol-name '#:*))
-	 (s3 (symbol-package var))	; BUGFIX [see above]
-	 (backing-var (intern (concatenate 'string s0 s1 s2) s3)))
+         (s1 (symbol-name var))
+         (s2 (symbol-name '#:*))
+         (s3 (symbol-package var))      ; BUGFIX [see above]
+         (backing-var (intern (concatenate 'string s0 s1 s2) s3)))
     ;; Note: The DEFINE-SYMBOL-MACRO must be the last thing we do so
     ;; that the value of the form is the symbol VAR.
     (if docp
       `(progn
-	 (defparameter ,backing-var ,val ,doc)
-	 (setf (documentation ',var 'variable) ,doc)
-	 (define-symbol-macro ,var ,backing-var))
+         (defparameter ,backing-var ,val ,doc)
+         (setf (documentation ',var 'variable) ,doc)
+         (define-symbol-macro ,var ,backing-var))
       `(progn
-	 (defparameter ,backing-var ,val)
-	 (define-symbol-macro ,var ,backing-var)))))
+         (defparameter ,backing-var ,val)
+         (define-symbol-macro ,var ,backing-var)))))
 
 ;;; File downloaded from http://rpw3.org/hacks/lisp/deflex.lisp
