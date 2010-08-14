@@ -10,43 +10,44 @@
        `(defmacro ,name (vars &body body)
           (let ((variables (mapcar #'ensure-car vars)))
             (multiple-value-bind (body declarations) (parse-body body)
+              ()
               `(,',type ,,'vars
-                        (let ((lexical-environment
-                               (make-instance
-                                'let-closure-info :type 'let*
+                 (let ((lexical-environment
+                        (make-instance
+                         'let-closure-info :type 'let*
                                         ; no need for let since values will
-					; already be known by restorage time
-                                :environment lexical-environment
-                                :variables ',,'variables
-                                :values-accessor
-                                ,(generate-closure-values-accessor variables)
-                                :declarations
-                                ',,'(mappend #'cdr declarations))))
-                          ,@,'declarations
-                          ,@,'body)))))))
+                                        ; already be known by restorage time
+                         :environment lexical-environment
+                         :variables ',,'variables
+                         :values-accessor
+                         ,(generate-closure-values-accessor variables)
+                         :declarations
+                         ',,'(mappend #'cdr declarations))))
+                   ,@,'declarations
+                   ,@,'body)))))))
   (def st-let let)
   (def st-let* let*))
 
 (defun parse-function (class lambda-list body
                        &optional name (get-environment t))
   `(make-instance ',class
-		  :lambda-list ',lambda-list :body ',body
-		  ,@(if get-environment
-			`(:environment lexical-environment))
-		  ,@(if name `(:name ',name))))
+                  :lambda-list ',lambda-list :body ',body
+                  ,@(if get-environment
+                        `(:environment lexical-environment))
+                  ,@(if name `(:name ',name))))
 
 (defmacro st-lambda (lambda-list &body body)
   (with-unique-names (function)
     `(let ((,function (lambda ,lambda-list ,@body)))
        (setf (get-function-info ,function)
-	     ,(parse-function 'lambda-info lambda-list body))
+             ,(parse-function 'lambda-info lambda-list body))
        ,function)))
 
 (defmacro st-named-lambda (name lambda-list &body body)
   (with-unique-names (function)
     `(let ((,function (named-lambda ,lambda-list ,@body)))
        (setf (get-function-info ,function)
-	     ,(parse-function 'named-lambda-info lambda-list body name))
+             ,(parse-function 'named-lambda-info lambda-list body name))
        ,function)))
 
 (macrolet
@@ -92,18 +93,18 @@
   (def st-labels labels))
 
 (macrolet ((def (name type)
-	     `(defmacro ,name (macros &body body)
-		(multiple-value-bind (body declarations) (parse-body body)
-		  `(,',type ,macros
-			    (let ((lexical-environment
-				   (make-instance
-				    'macro-closure-info :type ',',type
-				    :environment lexical-environment
-				    :macros ',macros
-				    :declarations
+             `(defmacro ,name (macros &body body)
+                (multiple-value-bind (body declarations) (parse-body body)
+                  `(,',type ,macros
+                            (let ((lexical-environment
+                                   (make-instance
+                                    'macro-closure-info :type ',',type
+                                    :environment lexical-environment
+                                    :macros ',macros
+                                    :declarations
                                     ',,'(mappend #'cdr declarations))))
-			      ,@,'declarations
-			      ,@,'body))))))
+                              ,@,'declarations
+                              ,@,'body))))))
   (def st-macrolet macrolet)
   (def st-symbol-macrolet symbol-macrolet))
 
@@ -113,35 +114,35 @@
      (assert (not (cdr arguments)))
      (let ((arg (first arguments)))
        (if (and (consp arg)
-		(member (car arg) '(lambda named-lambda)))
-	   `(st ,arg)
-	   ;; Either this is a global function (e.g. (function sin))
-	   ;; (which we do not handle - cl-store or any persistence
+                (member (car arg) '(lambda named-lambda)))
+           `(st ,arg)
+           ;; Either this is a global function (e.g. (function sin))
+           ;; (which we do not handle - cl-store or any persistence
            ;; library can easily handle this) or a local function
-	   ;; (which should already have been handled by st-flet
+           ;; (which should already have been handled by st-flet
            ;; or st-lambda macro)
-	   ;; either way, there is nothing left to do here.
-	   `(function ,arg))))
+           ;; either way, there is nothing left to do here.
+           `(function ,arg))))
     ((lambda named-lambda let let* flet labels macrolet symbol-macrolet)
      `(,(find-symbol (concatenate 'string "ST-" (symbol-name function-name)))
-	,@arguments))
+        ,@arguments))
     (t (let ((new-args (loop repeat (length arguments)
-			    collect (gensym))))
-	 (with-unique-names (function)
-	   `(let* (,@(mapcar #'list new-args arguments)
-		   (,function (,function-name . ,new-args)))
-	      (when (functionp ,function)
-		(setf (get-function-info ,function)
-		      (make-instance 'function-call-info
-				     :function-name ',function-name
+                            collect (gensym))))
+         (with-unique-names (function)
+           `(let* (,@(mapcar #'list new-args arguments)
+                   (,function (,function-name . ,new-args)))
+              (when (functionp ,function)
+                (setf (get-function-info ,function)
+                      (make-instance 'function-call-info
+                                     :function-name ',function-name
                                      :values (list . ,new-args))))
-	      ,function))))))
+              ,function))))))
 
 (defmacro stq (form)
   (with-unique-names (function)
     `(let ((,function ,form))
        (when (functionp ,function)
-	 (setf (get-function-info ,function)
-	       (make-instance 'quoted-function-info
-			      :body ',form)))
+         (setf (get-function-info ,function)
+               (make-instance 'quoted-function-info
+                              :body ',form)))
        ,function)))

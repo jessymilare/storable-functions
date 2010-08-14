@@ -20,11 +20,11 @@
   cl-store-compatibility-test
   (with-backend cl-store-backend
     (let ((cl-store-tests::*test-file* cl-store-test-file)
-	  (rt::*print-circle-on-failure* t)
-	  (rt::*expected-failures* '(cl-store-tests::custom.1 cl-store-tests::nocirc.1)))
+          (rt::*print-circle-on-failure* t)
+          (rt::*expected-failures* '(cl-store-tests::custom.1 cl-store-tests::nocirc.1)))
       (format t "~&Initializing cl-store tests...~%")
       (prog1 (rt:do-tests)
-	(format t "~&Finalized cl-store tests.~%")))))
+        (format t "~&Finalized cl-store tests.~%")))))
 
 (def-tester-for-standard-tests test-cl-store+functions ()
   (with-backend cl-store-backend
