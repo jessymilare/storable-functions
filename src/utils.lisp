@@ -50,7 +50,8 @@
 
 (defun pushnew-weak-list (elt list)
   (if (car list)
-      (pushnew (tg:make-weak-pointer elt) (cdr list) :key #'tg:weak-pointer-value)
+      (pushnew (tg:make-weak-pointer elt) (cdr list)
+               :key #'tg:weak-pointer-value)
       (pushnew elt (cdr list)))
   list)
 

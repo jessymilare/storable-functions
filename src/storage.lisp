@@ -2,18 +2,20 @@
 ;;; See the file license for license information.
 
 ;;; About the approach here:
-;;; It is needed to avoid circularity on closures because the code needs to be generated
-;;; right after restorage.
-;;; So, during storage, the environment slot is removed from every instance of a subclass of code-information.
-;;; This slot will be safelly recoverred during restorage. This way there is no internal circularity
+;;; It is needed to avoid circularity on closures because the code needs to be
+;;; generated right after restorage.
+;;; So, during storage, the environment slot is removed from every instance of a
+;;; subclass of code-information.
+;;; This slot will be safelly recoverred during restorage. This way there is no
+;;; internal circularity
 ;;; from the root down to all the leaves.
 ;;;
-;;; The instances of class "function-referrer" are created to be stored in the place of functions;
-;;; each instance contains the root of the environment tree and the function-info instance
-;;; associated with the function.
-;;; Unless something really goes wrong, right after restorage of a instance of "function-referrence",
-;;; the entire environment tree will be available without circularities
-;;; from the root and then it will be possible to generate the code.
+;;; The instances of class "function-referrer" are created to be stored instead
+;;; of the functions; each instance contains the root of the environment tree
+;;; and the function-info instance associated with the function.
+;;; Unless something really goes wrong, right after restorage of a instance of
+;;; "function-referrence", the entire environment tree will be available without
+;;; circularities from the root and then it will be possible to generate the code.
 
 (in-package :storable-functions)
 
@@ -25,7 +27,8 @@
 ;;; So we keep a list of weaklists that need to be set at the end (see utils.lisp).
 (defvar *weak-lists-to-set* nil)
 
-(defmacro with-storable-functions-restorage ((&key (restorage-table :create) &allow-other-keys)
+(defmacro with-storable-functions-restorage ((&key (restorage-table :create)
+                                                   &allow-other-keys)
 					     &body body)
   `(let ((*restored-functions* ,(ecase restorage-table
 				       (:create '(make-hash-table))
@@ -35,7 +38,8 @@
      (prog1 (progn ,@body)
        (mapcar #'set-weak-list *weak-lists-to-set*))))
 
-(defmacro with-storable-functions-storage ((&key (execute-gc t) &allow-other-keys)
+(defmacro with-storable-functions-storage ((&key (execute-gc t)
+                                                 &allow-other-keys)
 					   &body body)
   `(progn
      ;; GC avoids to store functions which aren't around anymore.
@@ -54,8 +58,9 @@
   (:method ((info code-information) callback)
     (let ((env (info-environment info)))
       (bt:with-recursive-lock-held (*storage-lock*)
-	(slot-makunbound info 'environment) ; avoids circularity - the circularity is well known,
-					; it is restored in call to restore-code-info
+        ;; avoids circularity - the circularity is well known,
+        ;; it is restored after call to restore-code-info
+	(slot-makunbound info 'environment)
 	(unwind-protect
 	     (funcall callback)
 	  (setf (info-environment info) env))))))
@@ -65,18 +70,24 @@
 
 (defmethod store-code-info ((info closure-info) callback)
   (bt:with-recursive-lock-held (*storage-lock*)
-    (unset-weak-list (info-children-weak-list info)) ; (avoid implementation-dependent details in the storage)
+    ;; avoids implementation-dependent details in the storage
+    (unset-weak-list (info-children-weak-list info))
     (unwind-protect (call-next-method)
-      (set-weak-list (info-children-weak-list info))))) ; now restores the list of weak-pointers
+      ;; now restores the list of weak-pointers
+      (set-weak-list (info-children-weak-list info)))))
 
 (defmethod store-code-info ((info let-closure-info) callback)
   (let ((func (info-values-accessor info)))
     (bt:with-recursive-lock-held (*storage-lock*)
-      (slot-makunbound info 'values-accessor) ; unbounds the unstorable function slot
-      (setf (info-values info) (funcall func info)) ; takes a "snapshot" of the current closure status
+      ;; unbounds the unstorable function slot
+      (slot-makunbound info 'values-accessor)
+      ;; takes a "snapshot" of the current closure status
+      (setf (info-values info) (funcall func info))
       (unwind-protect (call-next-method)
-	(slot-makunbound info 'values) ; removes unnecessary information
-	(setf (info-values-accessor info) func))))) ; and rebinds the function slot
+        ;; removes unnecessary information
+	(slot-makunbound info 'values)
+        ;; and rebinds the function slot
+	(setf (info-values-accessor info) func)))))
 
 (defgeneric restore-code-info (info)
   (:method ((info code-information))
@@ -109,8 +120,9 @@
     (slot-makunbound info 'values)))
 
 (defmethod restore-code-info ((info flet-closure-info))
-  (prog1 (call-next-method) ; calls standard method which will set info-environment to nil if
-					; the 'environment slot is unbound
+  (prog1 (call-next-method)
+    ;; the standard method will set info-environment to nil if
+    ;; the 'environment slot is unbound
     (let ((environment
 	   (ecase (info-type info)
 	     (labels info)

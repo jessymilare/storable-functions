@@ -18,5 +18,6 @@
   :components ((:module "tests"
 		:components ((:file "general")))))
 
-(defmethod perform ((op test-op) (system (eql (find-system :storable-functions-tests))))
+(defmethod perform ((op test-op)
+                    (system (eql (find-system :storable-functions-tests))))
   (funcall (find-symbol "RUN-ALL-TESTS" :storable-functions-tests)))

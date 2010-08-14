@@ -3,19 +3,20 @@
 
 (in-package :storable-functions)
 
-(defvar *storable-function-table* (tg:make-weak-hash-table :weakness :key :test #'eq
-                                                           :weakness-matters nil))
+(defvar *storable-function-table*
+  (tg:make-weak-hash-table :weakness :key :test #'eq :weakness-matters nil))
 
 (defvar *id* 0)
-(defvar *restored-functions* (tg:make-weak-hash-table :weakness :key :test #'eq
-                                                      :weakness-matters nil))
+(defvar *restored-functions*
+  (tg:make-weak-hash-table :weakness :key :test #'eq :weakness-matters nil))
 
 ;;; We need to lock because we change the field values in storage / restorage.
 ;;; This is just for safety, because (I believe) there probably won't be
 ;;; concurrent accesses at all. That's why the lock is a global variable,
 ;;; and not a field inside each class instance.
 
-(defvar *storage-lock* (bt:make-recursive-lock "Storable Functions Storage Lock"))
+(defvar *storage-lock*
+  (bt:make-recursive-lock "Storable Functions Storage Lock"))
 
 (declaim (inline get-function-info (setf get-function-info) rem-function-info))
 
@@ -57,7 +58,8 @@
   ((name :initarg :name :accessor info-name :type symbol)))
 
 (defclass function-call-info (function-info)
-  ((function-name :initarg :function-name :accessor info-function-name :type symbol)
+  ((function-name :initarg :function-name :accessor info-function-name
+                  :type symbol)
    (values :initarg :values :accessor info-values :type list)))
 
 (defclass quoted-function-info (function-info)
@@ -67,11 +69,14 @@
 
 (defclass closure-info (code-information)
   ((type :initarg :type :accessor info-type :type symbol)
-   (children :accessor info-children-weak-list :type list :initform (new-weak-list))
-   (declarations :initarg :declarations :accessor info-declarations :type list)))
+   (children :accessor info-children-weak-list :type list
+             :initform (new-weak-list))
+   (declarations :initarg :declarations :accessor info-declarations
+                 :type list)))
 
 (defclass let-closure-info (closure-info)
-  ((values-accessor :initarg :values-accessor :accessor info-values-accessor :type function)
+  ((values-accessor :initarg :values-accessor :accessor info-values-accessor
+                    :type function)
    (variables :initarg :variables :accessor info-variables :type list)
    (values :initarg :values :accessor info-values :type list)))
 
@@ -105,7 +110,8 @@
 (defmethod info-children ((info closure-info))
   ;; We put weak pointers here because the children of a closure
   ;; are only kept for generating the child code.
-  ;; If some child can be garbage-collected, it means it's function(s) is(are) not around anymore,
+  ;; If some child can be garbage-collected
+  ;; it means its functions are not around anymore,
   ;; therefore the child don't need to be stored.
   (get-list-from-weak-list (info-children-weak-list info)))
 
@@ -144,28 +150,29 @@
 
 (defun generate-closure-values-accessor (variables)
   (with-gensyms (sym info local-p value parent)
-    `(maybe-compile (dlambda (,info)
-                      (:get (,sym &optional ,local-p)
-                            (case ,sym
-                              ,@(mapcar (lambda (var)
-                                          `(,var (values ,var t)))
-                                        variables)
-                              (t (if-let ((,parent (and (not ,local-p)
-                                                        (info-environment ,info))))
-                                   (funcall (info-values-accessor ,parent)
-                                            ,parent :get ,sym)
-                                   (values nil nil)))))
-                      (:set (,sym ,value &optional ,local-p)
-                            (case ,sym
-                              ,@(mapcar (lambda (var)
-                                          `(,var (values (setf ,var ,value) t)))
-                                        variables)
-                              (t (if-let ((,parent (and (not ,local-p)
-                                                        (info-environment ,info))))
-                                   (funcall (info-values-accessor ,parent)
-                                            ,parent :set ,sym ,value)
-                                   (values nil nil)))))
-                      (t () (list . ,variables))))))
+    `(maybe-compile
+      (dlambda (,info)
+               (:get (,sym &optional ,local-p)
+                     (case ,sym
+                       ,@(mapcar (lambda (var)
+                                   `(,var (values ,var t)))
+                                 variables)
+                       (t (if-let ((,parent (and (not ,local-p)
+                                                 (info-environment ,info))))
+                            (funcall (info-values-accessor ,parent)
+                                     ,parent :get ,sym)
+                            (values nil nil)))))
+               (:set (,sym ,value &optional ,local-p)
+                     (case ,sym
+                       ,@(mapcar (lambda (var)
+                                   `(,var (values (setf ,var ,value) t)))
+                                 variables)
+                       (t (if-let ((,parent (and (not ,local-p)
+                                                 (info-environment ,info))))
+                            (funcall (info-values-accessor ,parent)
+                                     ,parent :set ,sym ,value)
+                            (values nil nil)))))
+               (t () (list . ,variables))))))
 
 (defgeneric generate-code-from-info (info))
 
@@ -176,7 +183,7 @@
 
 (defmethod generate-function-lambda ((info lambda-info))
   `(lambda ,(info-lambda-list info)
-     . ,(info-body info))) ; avoid doing unnecessary consing - this code is just for a single evaluation
+     . ,(info-body info))) ; avoid doing unnecessary consing
 
 (defmethod generate-function-lambda ((info named-lambda-info))
   `(named-lambda ,(info-name info) ,(info-lambda-list info)
@@ -208,9 +215,10 @@
     ((let let*)
      (mapcar #'(lambda (var value)
 		 `(,var ',value))
-	     (info-variables info) (if (slot-boundp info 'values)
-				       (info-values info)
-				       (funcall (info-values-accessor info) info))))
+	     (info-variables info)
+             (if (slot-boundp info 'values)
+                 (info-values info)
+                 (funcall (info-values-accessor info) info))))
     ((flet labels)
      (mapcar (compose #'cdr #'generate-function-lambda)
 	     (info-functions info)))

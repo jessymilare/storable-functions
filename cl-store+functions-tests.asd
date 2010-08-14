@@ -18,5 +18,6 @@
   :components ((:module "tests"
 		:components ((:file "cl-store-tests")))))
 
-(defmethod perform ((op test-op) (system (eql (find-system :cl-store+functions-tests))))
+(defmethod perform ((op test-op)
+                    (system (eql (find-system :cl-store+functions-tests))))
   (funcall (find-symbol "RUN-CL-STORE+FUNCTIONS-TESTS" :storable-functions-tests)))
