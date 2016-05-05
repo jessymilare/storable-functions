@@ -1,6 +1,6 @@
 ;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 
-;;; Copyright (c) 2009 Gustavo Henrique Milaré
+;;; Copyright (c) 2009-2016 Jéssica Milaré
 ;;; See the file license for license information.
 
 (defpackage :storable-functions-system
@@ -10,8 +10,8 @@
 
 (defsystem cl-store+functions-tests
   :name "cl-store+functions test"
-  :maintainer "Gustavo Henrique Milaré"
-  :author "Gustavo Henrique Milaré"
+  :maintainer "Jéssica Milaré"
+  :author "Jéssica Milaré"
   :licence "MIT style"
   :description "Test system for cl-store+functions"
   :depends-on (storable-functions-tests cl-store+functions cl-store-tests)

@@ -1,4 +1,6 @@
-;;; Copyright (c) 2009 Gustavo Henrique Milaré
+;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
+
+;;; Copyright (c) 2009-2016 Jéssica Milaré
 ;;; See the file license for license information.
 
 ;;; About the approach here:

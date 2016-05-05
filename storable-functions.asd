@@ -1,6 +1,6 @@
 ;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 
-;;; Copyright (c) 2009 Gustavo Henrique Milaré
+;;; Copyright (c) 2009-2016 Jéssica Milaré
 ;;; See the file license for license information.
 
 (defpackage :storable-functions-system
@@ -11,8 +11,8 @@
 (defsystem storable-functions
   :name "Storable Functions"
   :version "0.0.3"
-  :maintainer "Gustavo Henrique Milaré"
-  :author "Gustavo Henrique Milaré"
+  :maintainer "Jéssica Milaré"
+  :author "Jéssica Milaré"
   :licence "MIT style"
   :description "Implements a way to transform functions from and to CLOS
 instances of some specific classes. It contains a set of macros for making
