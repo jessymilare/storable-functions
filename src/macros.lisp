@@ -126,7 +126,8 @@
            ;; either way, there is nothing left to do here.
            `(function ,arg))))
     ((lambda named-lambda let let* flet labels macrolet symbol-macrolet)
-     `(,(find-symbol (concatenate 'string "ST-" (symbol-name function-name)))
+     `(,(find-symbol (concatenate 'string "ST-" (symbol-name function-name))
+                     :storable-functions)
         ,@arguments))
     (t (let ((new-args (loop repeat (length arguments)
                             collect (gensym))))
