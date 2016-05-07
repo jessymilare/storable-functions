@@ -15,8 +15,8 @@
 ;;; The instances of class "function-referrer" are created to be stored instead
 ;;; of the functions; each instance contains the root of the environment tree
 ;;; and the function-info instance associated with the function.
-;;; Unless something really goes wrong, right after restorage of a instance of
-;;; "function-referrence", the entire environment tree will be available without
+;;; Unless something really goes wrong, right after restorage of an instance of
+;;; "function-referrer", the entire environment tree will be available without
 ;;; circularities from the root and then it will be possible to generate the code.
 
 (in-package :storable-functions)

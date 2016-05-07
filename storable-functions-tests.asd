@@ -16,7 +16,8 @@
   :description "Test system for Storable Functions."
   :depends-on (storable-functions lift cl-store+functions cl-store-tests)
   :components ((:module "tests"
-                        :components ((:file "general")))))
+                        :components ((:file "general")
+                                     (:file "cl-store-tests" :depends-on ("general"))))))
 
 (defmethod perform ((op test-op)
                     (system (eql (find-system :storable-functions-tests))))

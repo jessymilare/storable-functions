@@ -10,7 +10,7 @@
 
 (defsystem-connection cl-store+functions
   :name "cl-store+functions"
-  :version "0.0.2"
+  :version "0.0.3"
   :maintainer "Jéssica Milaré"
   :author "Jéssica Milaré"
   :licence "MIT style"

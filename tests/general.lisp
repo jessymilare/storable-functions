@@ -4,16 +4,12 @@
 ;;; See the file license for license information.
 
 (defpackage :storable-functions-tests
-  (:use :cl :alexandria :storable-functions :lift))
+  (:use :cl :alexandria :storable-functions :lift :cl-store+functions :cl-store))
 
 (in-package :storable-functions-tests)
 
 (defun run-all-tests (&rest args)
   (apply #'run-cl-store+functions-tests args))
-
-;;; The tests here test much more than they need to,
-;;; but it is better to test too much than not testing enough.
-;;; And each test I'll have to write only once, so, here they come...
 
 (defmacro ensure=-funcall (func1 func2 &rest args)
   "Ensures the functions func1 and func2 return values that are =."
@@ -47,18 +43,18 @@
                                        form))
                             ,function-set))
                         (run-prologue-test-code (,function-set-var)
-                          (destructuring-bind ,function-vars ,function-set-var
+                          (destructuring-bind ,function-vars (ensure-list ,function-set-var)
                             (declare (ignorable ,@function-vars))
                             ,prologue-code))
                         (run-current-test (,function-set-var ,n-function-set-var)
-                          (destructuring-bind ,function-vars ,function-set-var
+                          (destructuring-bind ,function-vars (ensure-list ,function-set-var)
                             (destructuring-bind
                                   ,(mapcar
                                     #'(lambda (var)
-                                        (symbolicate "N-"(symbol-name var))))
-                                function-vars) ,n-function-set-var
-                                ,@current-body))))
-                 ,@body))))))
+                                        (symbolicate "N-"(symbol-name var)))
+                                    function-vars) (ensure-list ,n-function-set-var)
+                              ,@current-body))))
+                   ,@body))))))
 
 (defmacro def-std-test (testname (function-vars function-set) prologue-code
                         &body body)
@@ -282,5 +278,6 @@
                        (fun (st (lambda (x)
                                   (+ x a)))))
                   fun)))
-  (ensure-cases (x) (6 45 41 6 48 45 11 31 15 4)
+    nil
+  (ensure-cases (x) '(6 45 41 6 48 45 11 31 15 4)
     (ensure-equal-funcall func n-func x)))

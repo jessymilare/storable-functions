@@ -9,24 +9,54 @@
 
 (macrolet
     ((def (name type)
-       `(defmacro ,name (vars &body body)
-          (let ((variables (mapcar #'ensure-car vars)))
+       `(defmacro ,name (vars &body body &environment env)
+          (declare (ignorable env))
+          (let* ((vars (mapcar #'ensure-list vars))
+                 (variables (mapcar #'car vars))
+                 (vars
+                  ,(if (eq type 'let)
+                       ;; In LET, nothing left to do
+                       'vars
+                       ;; In LET*, we have to compute a new lexical-environment
+                       ;; for each variable (upfrom the second one)
+                       `(loop for (var value) in vars
+                           collect var into vars-until-now
+                           if (and vars-until-now
+                                   (needs-lexenv-p value ,'env))
+                           collect (let ((vars-to-bind (butlast vars-until-now)))
+                                     `(lexical-environment
+                                       (make-instance
+                                        'let-closure-info :type 'let*
+                                        :environment lexical-environment
+                                        :variables
+                                        ',,'(let ((length (length vars-to-bind)))
+                                             (assert (equal (subseq variables 0 length)
+                                                      vars-to-bind))
+                                             (setf vars-until-now nil)
+                                             (setf variables (subseq variables length))
+                                             vars-to-bind)
+                                        :values-accessor
+                                        ,(generate-closure-values-accessor vars-to-bind)
+                                        :declarations nil)))
+                           collect (list var value)))))
             (multiple-value-bind (body declarations) (parse-body body)
               ()
               `(,',type ,,'vars
-                 (let ((lexical-environment
-                        (make-instance
-                         'let-closure-info :type 'let*
+                        (let ,(if (needs-lexenv-p `(progn ,@,'body) env)
+                                  `((lexical-environment
+                                     (make-instance
+                                      'let-closure-info :type 'let*
                                         ; no need for let since values will
                                         ; already be known by restorage time
-                         :environment lexical-environment
-                         :variables ',,'variables
-                         :values-accessor
-                         ,(generate-closure-values-accessor variables)
-                         :declarations
-                         ',,'(mappend #'cdr declarations))))
-                   ,@,'declarations
-                   ,@,'body)))))))
+                                      :environment lexical-environment
+                                      :variables ',,'variables
+                                      :values-accessor
+                                      ,(generate-closure-values-accessor variables)
+                                      :declarations
+                                      ',,'(mappend #'cdr declarations))))
+                                  nil)
+                          ,@,'declarations
+                          ,@,'body)))))))
   (def st-let let)
   (def st-let* let*))
 
@@ -54,7 +84,7 @@
 
 (macrolet
     ((def (name type)
-       `(defmacro ,name (fspecs &body body)
+       `(defmacro ,name (fspecs &body body &environment env)
           (let* ((func-names (mapcar #'first fspecs))
                  (info-names (mapcar #'(lambda (func-name)
                                          (gensym (symbol-name func-name)))
@@ -69,13 +99,15 @@
             (multiple-value-bind (body declarations) (parse-body body)
               `(let ,(mapcar #'list info-names infos)
                  (,',type ,fspecs
-                          (let ((lexical-environment
-                                 (make-instance
-                                  'flet-closure-info :type ',',type
-                                  :environment lexical-environment
-                                  :functions (list ,@info-names)
-                                  :declarations
-                                  ',,'(mappend #'cdr declarations))))
+                          (let ,(if (or ,(eq type 'labels)
+                                        (needs-lexenv-p `(progn ,@,'body) env))
+                                    `((lexical-environment
+                                       (make-instance
+                                        'flet-closure-info :type ',',type
+                                        :environment lexical-environment
+                                        :functions (list ,@info-names)
+                                        :declarations
+                                        ',,'(mappend #'cdr declarations)))))
                             ;; Label functions may depend on the entire
                             ;; labels form.
                             ;; Flet functions, on the other hand, don't.

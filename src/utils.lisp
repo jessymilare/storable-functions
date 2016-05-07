@@ -5,12 +5,36 @@
 
 (in-package :storable-functions)
 
+#+nil
 (defun parse-body (body)
   (loop for rest on body
      for form = (car rest)
      while (eq 'declare (first form))
        collect form into declarations
      finally (return (values rest declarations))))
+
+(defun find-st-macro-in-tree (form env)
+  (when (consp form)
+    (let ((head (car form)))
+      (or (and (symbolp head)
+               (eq (symbol-package head) (find-package :storable-functions))
+               (macro-function head env))
+          (if (consp head)
+              (some (lambda (subform)
+                      (find-st-macro-in-tree subform env))
+                    form)
+              (multiple-value-bind (new-form expanded-p)
+                  (ignore-errors (macroexpand-1 form env))
+                (if (and expanded-p
+                         (not (member head '(function lambda)))
+                         (not (equalp form new-form)))
+                    (find-st-macro-in-tree new-form env)
+                    (some (lambda (subform)
+                            (find-st-macro-in-tree subform env))
+                          (cdr form)))))))))
+
+(defun needs-lexenv-p (form env)
+  (find-st-macro-in-tree form env))
 
 (defmacro with-collector ((collector) &body body)
   (with-gensyms (list last)
